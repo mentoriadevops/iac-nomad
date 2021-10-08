@@ -1,9 +1,26 @@
-resource "local_file" "ferramenta-1" {
-  content  = "${var.programa} - Estudos ${var.ferramenta_1}"
-  filename = "${path.root}/${var.ferramenta_1}.txt"
-}
+# colocar a chamada do módulo aqui
 
-resource "local_file" "ferramenta-2" {
-  content  = "${var.programa} - Estudos ${var.ferramenta_2}"
-  filename = "${path.root}/${var.ferramenta_2}.txt"
-}
+## Exemplo
+
+# provider "google" {
+#   project = var.project
+#   region  = var.region
+# }
+
+# module "groundwork" {
+#   source   = "github.com/mentoriaiac/iac-modulo-groundwork.git?ref=v0.1.0"
+#   project  = var.project
+#   vpc_name = "groundwork"
+# }
+
+# variable "project" {
+#   description = "Nome do projeto (Default é staging)"
+#   type        = string
+#   default     = "direct-link-325016"
+# }
+
+# variable "region" {
+#   description = "Nome da região"
+#   type        = string
+#   default     = "us-central1"
+# }

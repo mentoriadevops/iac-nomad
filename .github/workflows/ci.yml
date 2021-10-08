@@ -6,9 +6,13 @@ on:
       - main
   pull_request:
 
+env:
+  GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_KEY }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
 jobs:
-  terraform:
-    name: "Unit Tests"
+  validations:
+    name: "Validations"
     runs-on: ubuntu-18.04
 
     steps:
@@ -19,7 +23,6 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.0.0
-          terraform_wrapper: false
 
       - name: Terraform Format
         id: fmt
@@ -33,3 +36,17 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: "direct-link-325016"
+          service_account_key: ${{ secrets.GCP_KEY }}
+          export_default_credentials: true
+
+      - name: Use gcloud CLI
+        run: gcloud info
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
