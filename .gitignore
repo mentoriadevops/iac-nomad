@@ -30,5 +30,5 @@ override.tf.json
 # example: *tfplan*
 tfplan
 key.json
-terraform.tfvars
+# terraform.tfvars
 terraform.inc

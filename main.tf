@@ -31,37 +31,35 @@ module "network_gcp" {
 }
 
 module "nomad_servers" {
-  source         = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
-  project        = var.project
-  instance_name  = "nomad-server1"
-  instance_image = "orquestradores-1634167564"
-  machine_type   = "e2-small"
-  zone           = "us-central1-a"
-  network        = module.network_gcp.vpc_id
-  subnetwork     = module.network_gcp.subnets[0].id
-  tags           = ["nomad", "nomad-server"]
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
 
-  metadata_startup_script = "/usr/local/bin/nomad_bootstrap.sh server 1 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'"
+  for_each = var.server_pool
 
-  labels = {
-    key = "value"
-  }
+  project                 = var.project
+  instance_name           = each.value.instance_name
+  instance_image          = each.value.instance_image
+  machine_type            = each.value.machine_type
+  zone                    = each.value.zone
+  network                 = module.network_gcp.vpc_id
+  subnetwork              = module.network_gcp.subnets[0].id
+  tags                    = each.value.tag
+  metadata_startup_script = each.value.metadata_startup_script
+  labels                  = each.value.labels
 }
 
 module "nomad_clients" {
-  source         = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
-  project        = var.project
-  instance_name  = "nomad-client1"
-  instance_image = "orquestradores-1634167564"
-  machine_type   = "e2-small"
-  zone           = "us-central1-a"
-  network        = module.network_gcp.vpc_id
-  subnetwork     = module.network_gcp.subnets[0].id
-  tags           = ["nomad", "nomad-client"]
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
 
-  metadata_startup_script = "/usr/local/bin/nomad_bootstrap.sh client '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'"
+  for_each = var.client_pool
 
-  labels = {
-    key = "value"
-  }
+  project                 = var.project
+  instance_name           = each.value.instance_name
+  instance_image          = each.value.instance_image
+  machine_type            = each.value.machine_type
+  zone                    = each.value.zone
+  network                 = module.network_gcp.vpc_id
+  subnetwork              = module.network_gcp.subnets[0].id
+  tags                    = each.value.tag
+  metadata_startup_script = each.value.metadata_startup_script
+  labels                  = each.value.labels
 }
