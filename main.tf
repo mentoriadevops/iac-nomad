@@ -31,7 +31,7 @@ module "network_gcp" {
 }
 
 module "nomad_servers" {
-  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=6ce607c"
 
   for_each = var.server_pool
 
@@ -45,10 +45,14 @@ module "nomad_servers" {
   tags                    = each.value.tag
   metadata_startup_script = each.value.metadata_startup_script
   labels                  = each.value.labels
+
+  service_account_scopes = [
+    "https://www.googleapis.com/auth/compute.readonly",
+  ]
 }
 
 module "nomad_clients" {
-  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.1.0"
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=6ce607c"
 
   for_each = var.client_pool
 
@@ -62,4 +66,8 @@ module "nomad_clients" {
   tags                    = each.value.tag
   metadata_startup_script = each.value.metadata_startup_script
   labels                  = each.value.labels
+
+  service_account_scopes = [
+    "https://www.googleapis.com/auth/compute.readonly",
+  ]
 }
