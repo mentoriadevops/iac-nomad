@@ -1,4 +1,4 @@
-name: "CI/CD do Nomad"
+name: "CI/CD do Iac-Nomad"
 
 on:
   pull_request:
@@ -6,13 +6,13 @@ on:
 
 env:
   GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_KEY }}
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  TF_VAR_project: ${{ secrets.GCP_PROJECT_ID }}
 
 jobs:
-  plan:
-    name: 'terraform plan'
+  tests:
+    name: 'Unit Tests'
     runs-on: ubuntu-20.04
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    environment: staging
 
     steps:
       - name: Checkout
@@ -30,6 +30,49 @@ jobs:
 
       - name: Terraform Init
         id: init
+        run: terraform init -backend=false
+
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -no-color -check
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        continue-on-error: true
+
+      - name: Validação do tfsec
+        id: tfsec
+        run: |
+          docker run --rm -v $PWD:/app -w /app tfsec/tfsec . --soft-fail
+
+  deploy:
+    name: 'terraform deploy'
+    runs-on: ubuntu-20.04
+    environment: staging
+    needs: tests
+    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_KEY }}
+          export_default_credentials: true
+    
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Terraform create new workspace
+        id: workspace
+        run: terraform workspace new staging || terraform workspace select staging
+
+      - name: Terraform Init
+        id: init
         run: terraform init
 
       - name: Terraform Validate
@@ -40,12 +83,10 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: terraform plan -out="terraform_plan" -no-color
-        if: github.event_name == 'pull_request'
 
       - name: Plan output
         id: output
         uses: actions/github-script@v3
-        if: github.event_name == 'pull_request'
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
@@ -67,38 +108,8 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-  apply:
-    name: 'terraform apply'
-    runs-on: ubuntu-20.04
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: plan
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_KEY }}
-          export_default_credentials: true
-
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.3
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
-
+          
       - name: Terraform Apply
         id: apply
         run: terraform apply -auto-approve
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'

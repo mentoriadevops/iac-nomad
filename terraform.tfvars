@@ -1,2 +1,0 @@
-project = "mentoria-terraform"
-

@@ -25,7 +25,7 @@ module "network_gcp" {
   firewall_allow = [
     {
       protocol = "tcp"
-      port     = [22, 4646, 4647, 4648]
+      port     = [22, 4646, 4647, 4648, 20000 - 32000]
     }
   ]
 }
@@ -43,12 +43,13 @@ module "nomad_servers" {
   network                 = module.network_gcp.vpc_id
   subnetwork              = module.network_gcp.subnets[0].id
   metadata_startup_script = <<EOF
-  /usr/local/bin/nomad_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
+  /usr/local/bin/nomad_bootstrap.sh server 1 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
   EOF 
   tags                    = ["nomad", "nomad-server"]
   labels = {
     terraform = "true",
     component = "nomad_server"
+    cluster   = "staging"
   }
   service_account_scopes = [
     "https://www.googleapis.com/auth/compute.readonly",
@@ -68,8 +69,8 @@ module "nomad_clients" {
 
   project                 = var.project
   instance_name           = "client-${count.index + 1}"
-  machine_type            = "e2-medium"
-  instance_image          = "orquestradores-20211110235155"
+  machine_type            = "e2-small"
+  instance_image          = "orquestradores-v0-1-0"
   zone                    = data.google_compute_zones.us-central1.names[count.index % length(data.google_compute_zones.us-central1.names)]
   network                 = module.network_gcp.vpc_id
   subnetwork              = module.network_gcp.subnets[0].id
@@ -85,6 +86,7 @@ module "nomad_clients" {
   labels = {
     terraform = "true",
     component = "nomad_server"
+    cluster   = "staging"
   }
 }
 
