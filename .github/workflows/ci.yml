@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-20.04
     environment: staging
     needs: tests
-    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' && github.base_ref == 'refs/heads/main'
 
     steps:
       - name: Checkout
