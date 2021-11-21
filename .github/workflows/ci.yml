@@ -1,33 +1,32 @@
-name: "Terraform"
+name: "CI/CD do Nomad"
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+  push:
 
 env:
   GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_KEY }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
 
 jobs:
-  validations:
-    name: "Validations"
-    runs-on: ubuntu-18.04
+  plan:
+    name: 'terraform plan'
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_KEY }}
+          export_default_credentials: true
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.0.0
-
-      - name: Terraform Format
-        id: fmt
-        run: terraform fmt -check
-        continue-on-error: true
 
       - name: Terraform Init
         id: init
@@ -36,17 +35,70 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
-      
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@master
-        with:
-          project_id: "direct-link-325016"
-          service_account_key: ${{ secrets.GCP_KEY }}
-          export_default_credentials: true
-
-      - name: Use gcloud CLI
-        run: gcloud info
+        continue-on-error: true
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color
+        run: terraform plan -out="terraform_plan" -no-color
+        if: github.event_name == 'pull_request'
+
+      - name: Plan output
+        id: output
+        uses: actions/github-script@v3
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            <details><summary>Show Plan</summary>
+            \`\`\`${process.env.PLAN}\`\`\`
+            </details>
+            **Pusher**: @${{ github.actor }}
+            **Action**: ${{ github.event_name }}
+            `;
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+  apply:
+    name: 'terraform apply'
+    runs-on: ubuntu-20.04
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: plan
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_KEY }}
+          export_default_credentials: true
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.3
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve
