@@ -1,6 +1,7 @@
 variable "project" {
   description = "Nome do projeto (Default é staging)"
   type        = string
+  default     = "mentoria-iac-staging"
 }
 
 variable "region" {
