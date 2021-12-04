@@ -8,12 +8,13 @@ provider "google" {
 }
 
 module "network_gcp" {
-  source      = "github.com/Rehzende/iac-modulo-rede-gcp.git?ref=d8c3058"
+  source      = "github.com/mentoriaiac/iac-modulo-rede-gcp.git?ref=main"
   project     = var.project
   vpc_name    = "rede-mentoria"
   direction   = "INGRESS"
-  target_tags = ["nomad"]
-  source_tags = ["nomad"]
+  target_tags = ["nomad", "consul"]
+  #  TODO: `source_tags` assim bloqueia o SSH da CLI do GCP.
+  #  source_tags = ["nomad", "consul"]
   subnetworks = [
     {
       name          = "subnet-nomad"
@@ -25,7 +26,13 @@ module "network_gcp" {
   firewall_allow = [
     {
       protocol = "tcp"
-      port     = [22, 4646, 4647, 4648]
+      port = [
+        22,
+        # Nomad
+        4646, 4647, 4648,
+        # Consul
+        "8300-8302", "8500-8502", 8600, "21000-21255",
+      ]
     }
   ]
 }
@@ -44,8 +51,9 @@ module "nomad_servers" {
   subnetwork              = module.network_gcp.subnets[0].id
   metadata_startup_script = <<EOF
   /usr/local/bin/nomad_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
-  EOF 
-  tags                    = ["nomad", "nomad-server"]
+  /usr/local/bin/consul_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=consul\"'
+  EOF
+  tags                    = ["nomad", "nomad-server", "consul"]
   labels = {
     terraform = "true",
     component = "nomad_server"
@@ -57,7 +65,7 @@ module "nomad_servers" {
 
 
 data "google_compute_zones" "us-central1" {
-  #  project = mentoria-terraform 
+  #  project = mentoria-terraform
   region = "us-central1"
 }
 
@@ -75,16 +83,16 @@ module "nomad_clients" {
   subnetwork              = module.network_gcp.subnets[0].id
   metadata_startup_script = <<EOF
   /usr/local/bin/nomad_bootstrap.sh client '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
+  /usr/local/bin/consul_bootstrap.sh agent '\"provider=gce project_name=${var.project} tag_value=consul\"'
   EOF
 
   service_account_scopes = [
     "https://www.googleapis.com/auth/compute.readonly",
   ]
 
-  tags = ["nomad"]
+  tags = ["nomad", "consul"]
   labels = {
     terraform = "true",
-    component = "nomad_server"
+    component = "nomad_client"
   }
 }
-
