@@ -8,7 +8,7 @@ provider "google" {
 }
 
 module "network_gcp" {
-  source      = "github.com/Rehzende/iac-modulo-rede-gcp.git?ref=d8c3058"
+  source      = "github.com/mentoriaiac/iac-modulo-rede-gcp.git?ref=v0.2.0"
   project     = var.project
   vpc_name    = "rede-mentoria"
   direction   = "INGRESS"
