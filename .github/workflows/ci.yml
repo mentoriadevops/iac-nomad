@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true
 
       - name: Terraform create new workspace
-        id: workspace
+        id: workspace-test
         run: terraform workspace new test || terraform workspace select test
 
       - name: Terraform Plan
@@ -53,7 +53,7 @@ jobs:
         run: terraform destroy -auto-approve
 
       - name: Terraform create new workspace
-        id: workspace
+        id: workspace-staging
         run: terraform workspace new staging || terraform workspace select staging
 
       - name: Terraform Plan
