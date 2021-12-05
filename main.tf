@@ -8,24 +8,31 @@ provider "google" {
 }
 
 module "network_gcp" {
-  source      = "github.com/Rehzende/iac-modulo-rede-gcp.git?ref=d8c3058"
+  source      = "github.com/mentoriaiac/iac-modulo-rede-gcp.git?ref=v0.2.0"
   project     = var.project
+  region      = var.region
   vpc_name    = "rede-mentoria"
   direction   = "INGRESS"
-  target_tags = ["nomad"]
-  source_tags = ["nomad"]
+  target_tags = ["nomad", "consul"]
+  source_tags = ["nomad", "consul"]
   subnetworks = [
     {
       name          = "subnet-nomad"
       ip_cidr_range = "10.0.0.0/16"
-      region        = "us-central1"
+      region        = var.region
     }
   ]
 
   firewall_allow = [
     {
       protocol = "tcp"
-      port     = [22, 4646, 4647, 4648]
+      port = [
+        22,
+        # Nomad
+        4646, 4647, 4648,
+        # Consul
+        "8300-8302", "8500-8502", 8600, "21000-21255",
+      ]
     }
   ]
 }
@@ -44,8 +51,9 @@ module "nomad_servers" {
   subnetwork              = module.network_gcp.subnets[0].id
   metadata_startup_script = <<EOF
   /usr/local/bin/nomad_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
+  /usr/local/bin/consul_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=consul\"'
   EOF 
-  tags                    = ["nomad", "nomad-server"]
+  tags                    = ["nomad", "nomad-server", "consul"]
   labels = {
     terraform = "true",
     component = "nomad_server"
@@ -58,7 +66,7 @@ module "nomad_servers" {
 
 data "google_compute_zones" "us-central1" {
   #  project = mentoria-terraform 
-  region = "us-central1"
+  region = var.region
 }
 
 module "nomad_clients" {
@@ -69,22 +77,23 @@ module "nomad_clients" {
   project                 = var.project
   instance_name           = "client-${count.index + 1}"
   machine_type            = "e2-medium"
-  instance_image          = "orquestradores-20211110235155"
+  instance_image          = "orquestradores-v0-2-0"
   zone                    = data.google_compute_zones.us-central1.names[count.index % length(data.google_compute_zones.us-central1.names)]
   network                 = module.network_gcp.vpc_id
   subnetwork              = module.network_gcp.subnets[0].id
   metadata_startup_script = <<EOF
   /usr/local/bin/nomad_bootstrap.sh client '\"provider=gce project_name=${var.project} tag_value=nomad-server\"'
+  /usr/local/bin/consul_bootstrap.sh agent '\"provider=gce project_name=${var.project} tag_value=consul\"'
   EOF
 
   service_account_scopes = [
     "https://www.googleapis.com/auth/compute.readonly",
   ]
 
-  tags = ["nomad"]
+  tags = ["nomad", "consul"]
   labels = {
     terraform = "true",
-    component = "nomad_server"
+    component = "nomad_client"
   }
 }
 
