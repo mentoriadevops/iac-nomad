@@ -39,5 +39,5 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -var region=us-west1 -out="terraform_plan" -no-color
+        run: terraform plan -var region=us-west1 -var project="direct-link-325016" -out="terraform_plan" -no-color
 
