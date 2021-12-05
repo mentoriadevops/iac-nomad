@@ -36,6 +36,10 @@ jobs:
         run: terraform validate
         continue-on-error: true
 
+      - name: Terraform create new workspace
+        id: workspace
+        run: terraform workspace new test || terraform workspace select test
+
       - name: Terraform Plan
         id: plan
         run: terraform plan -var region=us-west1 -out="terraform_plan"
@@ -47,6 +51,10 @@ jobs:
       - name: Terraform Destroy
         id: destroy
         run: terraform destroy -auto-approve
+
+      - name: Terraform create new workspace
+        id: workspace
+        run: terraform workspace new staging || terraform workspace select staging
 
       - name: Terraform Plan
         id: plan-staging
