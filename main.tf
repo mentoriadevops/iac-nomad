@@ -10,6 +10,7 @@ provider "google" {
 module "network_gcp" {
   source      = "github.com/mentoriaiac/iac-modulo-rede-gcp.git?ref=v0.2.0"
   project     = var.project
+  region      = var.region
   vpc_name    = "rede-mentoria"
   direction   = "INGRESS"
   target_tags = ["nomad", "consul"]
