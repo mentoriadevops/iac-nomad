@@ -7,7 +7,7 @@ on:
 
 env:
   GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_KEY }}
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_PROJECT_ID: "direct-link-325016"
 
 jobs:
   plan:
