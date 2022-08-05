@@ -3,15 +3,15 @@ data "google_compute_zones" "us-central1" {
 }
 
 module "nomad_clients" {
-  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.0"
-  count  = 3
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.1"
+  count  = 2
 
   project = var.project
   zone    = data.google_compute_zones.us-central1.names[count.index % length(data.google_compute_zones.us-central1.names)]
 
   instance_name  = "client-${count.index + 1}"
-  instance_image = "orquestradores-v0-2-0"
-  machine_type   = "e2-medium"
+  instance_image = "nomad-v0-3-0"
+  machine_type   = "e2-small"
 
   network    = module.network_gcp.vpc_id
   subnetwork = module.network_gcp.subnets[0].id

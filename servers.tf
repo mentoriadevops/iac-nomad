@@ -1,25 +1,25 @@
 locals {
   server_pool = {
     server-node-1 = {
-      machine_type   = "e2-medium"
-      instance_image = "orquestradores-v0-2-0"
+      machine_type   = "e2-small"
+      instance_image = "nomad-v0-3-0"
       zone           = "${var.region}-c"
     },
     server-node-2 = {
-      machine_type   = "e2-medium"
-      instance_image = "orquestradores-v0-2-0"
+      machine_type   = "e2-small"
+      instance_image = "nomad-v0-3-0"
       zone           = "${var.region}-b"
     },
     server-node-3 = {
-      machine_type   = "e2-medium"
-      instance_image = "orquestradores-v0-2-0"
+      machine_type   = "e2-small"
+      instance_image = "nomad-v0-3-0"
       zone           = "${var.region}-a"
     }
   }
 }
 
 module "nomad_servers" {
-  source   = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.0"
+  source   = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.1"
   for_each = local.server_pool
 
   project = var.project
