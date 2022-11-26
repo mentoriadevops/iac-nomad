@@ -19,7 +19,7 @@ locals {
 }
 
 module "nomad_servers" {
-  source   = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.1"
+  source   = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.3.0"
   for_each = local.server_pool
 
   project = var.project

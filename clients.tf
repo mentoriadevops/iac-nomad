@@ -3,7 +3,7 @@ data "google_compute_zones" "us-central1" {
 }
 
 module "nomad_clients" {
-  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.2.1"
+  source = "github.com/mentoriaiac/iac-modulo-compute-gcp.git?ref=v0.3.0"
   count  = 2
 
   project = var.project
