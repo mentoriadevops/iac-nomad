@@ -29,14 +29,14 @@ module "nomad_servers" {
   instance_image = each.value.instance_image
   machine_type   = each.value.machine_type
 
-  network    = module.network_gcp.vpc_id
-  subnetwork = module.network_gcp.subnets[0].id
+  network    = data.google_compute_network.groundwork.name
+  subnetwork = data.google_compute_subnetwork.nomad.name
   tags       = ["nomad", "nomad-server", "consul"]
 
   metadata_startup_script = <<EOF
 /usr/local/bin/nomad_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=nomad-server\"' global dc1 nomad-ca-cert:1 nomad-server-cert:1 nomad-server-key:1
 /usr/local/bin/consul_bootstrap.sh server 3 '\"provider=gce project_name=${var.project} tag_value=consul\"'
-  EOF
+EOF
 
   roles = [
     "roles/secretmanager.secretAccessor",

@@ -1,33 +1,29 @@
-module "network_gcp" {
-  source = "github.com/mentoriaiac/iac-modulo-rede-gcp.git?ref=v0.2.0"
+# Busca informações do groundwork.
+data "google_compute_network" "groundwork" {
+  name = "groundwork"
+}
 
-  project = var.project
-  region  = var.region
+data "google_compute_subnetwork" "nomad" {
+  name = "nomad"
+}
 
-  vpc_name  = "rede-mentoria"
-  direction = "INGRESS"
+# Firewall
+resource "google_compute_firewall" "tmp_nomad_allow_access" {
+  name        = "tmp-nomad-allow-access"
+  description = "Regra temporária para permitir acesso direto às máquinas do cluster Nomad para debug. Remover quando tiver infraestrura de bastion."
 
-  target_tags = ["nomad", "consul"]
-  source_tags = ["nomad", "consul"]
+  network       = data.google_compute_network.groundwork.name
+  target_tags   = ["nomad", "consul"]
+  source_ranges = ["0.0.0.0/0"]
 
-  subnetworks = [
-    {
-      name          = "subnet-nomad"
-      ip_cidr_range = "10.0.0.0/16"
-      region        = var.region
-    }
-  ]
-
-  firewall_allow = [
-    {
-      protocol = "tcp"
-      port = [
-        22,
-        # Nomad
-        4646, 4647, 4648,
-        # Consul
-        "8300-8302", "8500-8502", 8600, "21000-21255",
-      ]
-    }
-  ]
+  allow {
+    protocol = "tcp"
+    ports = [
+      22,
+      # Nomad
+      4646, 4647, 4648,
+      # Consul
+      "8300-8302", "8500-8502", 8600, "21000-21255",
+    ]
+  }
 }
